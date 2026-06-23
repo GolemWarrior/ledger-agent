@@ -1,5 +1,6 @@
 import { Routes, Route, NavLink } from 'react-router-dom'
 import Transactions from './views/Transactions'
+import TransactionDetail from './views/TransactionDetail'
 import PendingQueue from './views/PendingQueue'
 import Categories from './views/Categories'
 import VendorMemory from './views/VendorMemory'
@@ -57,6 +58,7 @@ export default function App() {
           <Route path="/pending" element={<PendingQueue />} />
           <Route path="/categories" element={<Categories />} />
           <Route path="/vendor-memory" element={<VendorMemory />} />
+          <Route path="/transactions/:id" element={<TransactionDetail />} />
         </Routes>
       </main>
     </div>

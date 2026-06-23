@@ -1,7 +1,7 @@
 """Tests for api/pending.py — GET /api/v1/transactions/pending endpoint."""
 from datetime import date
 from decimal import Decimal
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import AsyncMock, MagicMock, patch
 
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
@@ -73,3 +73,75 @@ def test_list_pending_shape():
     assert row["id"] == 42
     assert row["merchant_name"] == "Uber Eats"
     assert row["escalation_question"] == "Is this dining or entertainment?"
+
+
+# --- Resolve endpoint tests ---
+
+def _make_resolve_app(txn_override=None):
+    """Create a test app for the resolve endpoint with a mocked async session."""
+    app = FastAPI()
+    app.include_router(pending_router, prefix="/api/v1")
+
+    txn = txn_override if txn_override is not None else _make_txn()
+    session = AsyncMock()
+    session.get = AsyncMock(return_value=txn)
+
+    class _Ctx:
+        async def __aenter__(self): return session
+        async def __aexit__(self, *_): pass
+
+    app.state.async_session_factory = lambda: _Ctx()
+    app.state.sync_session_factory = MagicMock()
+    app.state.settings = MagicMock()
+    return TestClient(app)
+
+
+def test_resolve_transaction_success():
+    """200 response with correct shape; _resume_graph called once."""
+    client = _make_resolve_app()  # txn.status defaults to TransactionStatus.escalated
+
+    with patch("ledger_agent.api.pending._resume_graph") as mock_resume:
+        response = client.post("/api/v1/transactions/1/resolve", json={"answer": "Dining"})
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["data"]["status"] == "resolved"
+    assert body["data"]["transaction_id"] == 1
+    mock_resume.assert_called_once()
+
+
+def test_resolve_transaction_not_found():
+    """404 when transaction does not exist."""
+    session = AsyncMock()
+    session.get = AsyncMock(return_value=None)
+
+    app = FastAPI()
+    app.include_router(pending_router, prefix="/api/v1")
+
+    class _Ctx:
+        async def __aenter__(self): return session
+        async def __aexit__(self, *_): pass
+
+    app.state.async_session_factory = lambda: _Ctx()
+    app.state.sync_session_factory = MagicMock()
+    app.state.settings = MagicMock()
+    client = TestClient(app)
+
+    response = client.post("/api/v1/transactions/99/resolve", json={"answer": "Dining"})
+    assert response.status_code == 404
+    body = response.json()
+    assert body["error"] == "not_found"
+
+
+def test_resolve_transaction_not_escalated():
+    """400 when transaction exists but is not in escalated state."""
+    txn = _make_txn()
+    txn.status = TransactionStatus.resolved  # not escalated
+    client = _make_resolve_app(txn_override=txn)
+
+    with patch("ledger_agent.api.pending._resume_graph"):
+        response = client.post("/api/v1/transactions/1/resolve", json={"answer": "Dining"})
+
+    assert response.status_code == 400
+    body = response.json()
+    assert body["error"] == "not_escalated"

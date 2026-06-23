@@ -18,8 +18,12 @@ async function fetchTransactions(): Promise<{ data: Transaction[]; total: number
   return res.json()
 }
 
-export function useTransactions() {
-  return useQuery({ queryKey: ['transactions'], queryFn: fetchTransactions })
+export function useTransactions(refetchInterval?: number | false) {
+  return useQuery({
+    queryKey: ['transactions'],
+    queryFn: fetchTransactions,
+    refetchInterval: refetchInterval ?? false,
+  })
 }
 
 export interface PendingTransaction {
@@ -52,14 +56,30 @@ async function resolveTransaction(id: number, answer: string): Promise<void> {
   if (!res.ok) throw new Error('Failed to resolve transaction')
 }
 
+export interface TransactionDetail extends Transaction {
+  reasoning_trace: string | null
+  escalation_question: string | null
+}
+
+async function fetchTransaction(id: number): Promise<{ data: TransactionDetail }> {
+  const res = await fetch(`/api/v1/transactions/${id}`)
+  if (!res.ok) throw new Error('Failed to fetch transaction')
+  return res.json()
+}
+
+export function useTransaction(id: number) {
+  return useQuery({ queryKey: ['transactions', id], queryFn: () => fetchTransaction(id) })
+}
+
 export function useResolveTransaction() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: ({ id, answer }: { id: number; answer: string }) =>
       resolveTransaction(id, answer),
-    onSuccess: () => {
+    onSuccess: (_data, { id }) => {
       queryClient.invalidateQueries({ queryKey: ['transactions', 'pending'] })
       queryClient.invalidateQueries({ queryKey: ['transactions'] })
+      queryClient.invalidateQueries({ queryKey: ['transactions', id] })
     },
   })
 }

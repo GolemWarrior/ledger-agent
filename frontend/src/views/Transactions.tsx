@@ -1,4 +1,7 @@
+import { useNavigate } from 'react-router-dom'
 import { useTransactions } from '../api/transactions'
+import { useSyncStatus } from '../api/sync'
+import ConfidenceBadge from '../components/ConfidenceBadge'
 
 const STATUS_STYLES: Record<string, string> = {
   pending:   'bg-yellow-100 text-yellow-800',
@@ -9,7 +12,10 @@ const STATUS_STYLES: Record<string, string> = {
 }
 
 export default function Transactions() {
-  const { data, isLoading, isError } = useTransactions()
+  const navigate = useNavigate()
+  const { data: syncData } = useSyncStatus()
+  const isProcessing = syncData?.data?.status === 'processing'
+  const { data, isLoading, isError } = useTransactions(isProcessing ? 3000 : false)
 
   if (isLoading) return <div className="text-gray-500">Loading transactions…</div>
   if (isError)   return <div className="text-red-500">Failed to load transactions. Please refresh.</div>
@@ -46,7 +52,7 @@ export default function Transactions() {
           </thead>
           <tbody>
             {txns.map((t) => (
-              <tr key={t.id} className="border-b border-gray-100 hover:bg-gray-50">
+              <tr key={t.id} className="border-b border-gray-100 hover:bg-gray-50 cursor-pointer" onClick={() => navigate(`/transactions/${t.id}`)}>
                 <td className="py-2 pr-4 text-gray-500 whitespace-nowrap">{t.date}</td>
                 <td className="py-2 pr-4 text-gray-900 max-w-xs truncate">{t.description}</td>
                 <td className="py-2 pr-4 text-gray-600">{t.merchant_name ?? '—'}</td>
@@ -58,8 +64,12 @@ export default function Transactions() {
                 </td>
                 <td className="py-2 pr-4 text-gray-600">{t.account_name}</td>
                 <td className="py-2 pr-4 text-gray-600">{t.category_name ?? '—'}</td>
-                <td className="py-2 pr-4 text-right text-gray-600">
-                  {t.confidence_score != null ? `${Math.round(t.confidence_score * 100)}%` : '—'}
+                <td className="py-2 pr-4 text-right">
+                  {t.confidence_score != null && t.status !== 'escalated' ? (
+                    <ConfidenceBadge score={t.confidence_score} />
+                  ) : (
+                    <span className="text-gray-500">—</span>
+                  )}
                 </td>
                 <td className="py-2">
                   <span className={`inline-block px-2 py-0.5 rounded text-xs font-medium ${STATUS_STYLES[t.status] ?? 'bg-gray-100 text-gray-700'}`}>

@@ -23,6 +23,7 @@ async def global_exception_handler(request: Request, exc: Exception) -> JSONResp
 
 @app.on_event("startup")
 async def startup() -> None:
+    app.state.settings = settings
     app.state.async_engine = make_async_engine(settings.database_url)
     app.state.async_session_factory = make_async_session_factory(app.state.async_engine)
     app.state.sync_engine = make_sync_engine(settings.database_url_sync)

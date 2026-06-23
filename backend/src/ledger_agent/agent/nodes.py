@@ -1,4 +1,5 @@
 import logging
+from datetime import UTC, datetime
 from typing import Literal, Optional, TypedDict
 
 from anthropic import Anthropic
@@ -6,7 +7,7 @@ from langgraph.types import interrupt
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from ledger_agent.db.models import Category, Transaction, TransactionStatus
+from ledger_agent.db.models import Category, Resolution, Transaction, TransactionStatus, VendorMemory
 from ledger_agent.agent.tools import lookup_vendor_memory
 from ledger_agent.agent.prompts import build_classification_prompt, get_live_categories, parse_llm_response
 
@@ -36,9 +37,21 @@ def lookup_node(state: ClassificationState, session: Session) -> dict:
                 "vendor": hit.vendor,
                 "category": hit.category.name,
                 "hit_count": hit.hit_count,
-            }
+            },
+            "category_name": hit.category.name,
+            "confidence": 0.95,
+            "reasoning_trace": (
+                f"Vendor Memory hit: {vendor} → {hit.category.name} "
+                f"(seen {hit.hit_count} time(s))"
+            ),
         }
     return {"vendor_memory_hit": None}
+
+
+def vm_gate(state: ClassificationState) -> Literal["auto_resolve", "classify"]:
+    if state.get("vendor_memory_hit") is not None:
+        return "auto_resolve"
+    return "classify"
 
 
 def classify_node(state: ClassificationState, session: Session, settings) -> dict:
@@ -72,6 +85,22 @@ def gate(state: ClassificationState) -> Literal["auto_resolve", "escalate"]:
     return "escalate"
 
 
+def _upsert_vendor_memory(session: Session, vendor: str, category: Category) -> None:
+    """Upsert VendorMemory: create new entry or increment hit_count on existing. Caller commits."""
+    vm = session.scalar(select(VendorMemory).where(VendorMemory.vendor == vendor))
+    if vm is None:
+        session.add(VendorMemory(
+            vendor=vendor,
+            category_id=category.id,
+            hit_count=1,
+            last_used_at=datetime.now(UTC),
+        ))
+    else:
+        vm.category_id = category.id
+        vm.hit_count = vm.hit_count + 1
+        vm.last_used_at = datetime.now(UTC)
+
+
 def escalate_node(state: ClassificationState, session: Session) -> dict:
     txn = session.get(Transaction, state["transaction_id"])
     if txn is None:
@@ -84,9 +113,32 @@ def escalate_node(state: ClassificationState, session: Session) -> dict:
     )
     session.commit()
 
-    # Pause graph — resumes when Story 2.3 calls invoke(Command(resume=answer))
-    interrupt(txn.escalation_question)
-    # NOTE: Code below this line only executes on Story 2.3 resume.
+    # Pause graph — returns user_answer on resume via Command(resume=answer)
+    user_answer = interrupt(txn.escalation_question)
+
+    # --- Resume path (DB-only, no LLM calls) ---
+    vendor = state.get("merchant_name") or state["description"][:50]
+
+    category = session.scalar(
+        select(Category).where(Category.name.ilike(user_answer.strip()))
+    )
+    if category is None:
+        logger.warning(
+            "Resolution for txn %s: answer %r has no category match — using Uncategorized",
+            state["transaction_id"], user_answer,
+        )
+        category = session.scalar(select(Category).where(Category.name == "Uncategorized"))
+    if category is None:
+        logger.error(
+            "Transaction %s — Uncategorized not found in DB; cannot resolve", state["transaction_id"]
+        )
+        return {}
+
+    txn.status = TransactionStatus.resolved
+    txn.category_id = category.id
+    session.add(Resolution(transaction_id=txn.id, user_answer=user_answer))
+    _upsert_vendor_memory(session, vendor, category)
+    session.commit()
     return {}
 
 
@@ -119,5 +171,10 @@ def auto_resolve_node(state: ClassificationState, session: Session) -> dict:
     txn.category_id = category.id
     txn.confidence_score = state["confidence"]
     txn.reasoning_trace = state["reasoning_trace"]
+
+    # Upsert vendor memory (FR-21 — deferred from Story 2.1)
+    vendor = state.get("merchant_name") or state["description"][:50]
+    _upsert_vendor_memory(session, vendor, category)
+
     session.commit()
     return {}

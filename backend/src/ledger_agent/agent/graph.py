@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 from langgraph.graph import StateGraph, END
 
 from ledger_agent.agent.nodes import (
-    ClassificationState, auto_resolve_node, classify_node, escalate_node, gate, lookup_node
+    ClassificationState, auto_resolve_node, classify_node, escalate_node, gate, lookup_node, vm_gate
 )
 
 
@@ -22,7 +22,11 @@ def build_graph(session: Session, settings):
     g.add_node("escalate", partial(escalate_node, session=session))
 
     g.set_entry_point("lookup")
-    g.add_edge("lookup", "classify")
+    g.add_conditional_edges(
+        "lookup",
+        vm_gate,
+        {"auto_resolve": "auto_resolve", "classify": "classify"},
+    )
     g.add_conditional_edges(
         "classify",
         gate,
