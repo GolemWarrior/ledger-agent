@@ -1,1 +1,121 @@
 description,amount,date,correct_category,is_genuinely_ambiguous,notes
+Whole Foods Market,84.37,2026-01-14,Groceries,false,A supermarket purchase is clearly groceries.
+TRADER JOE'S #542 NEW YORK NY,46.18,2026-03-02,Groceries,false,Trader Joe's is clearly a grocery store.
+KROGER 00482 CINCINNATI OH,72.95,2026-05-21,Groceries,false,Kroger is clearly a supermarket.
+SAFEWAY STORE 1174,38.62,2026-02-09,Groceries,false,Safeway is clearly a grocery store.
+ALDI 61073,29.44,2026-06-05,Groceries,false,Aldi is clearly a discount grocer.
+PUBLIX #1458 TAMPA FL,91.26,2026-04-17,Groceries,false,Publix is clearly a supermarket.
+H MART #071 MANHATTAN,57.83,2026-01-28,Groceries,false,H Mart is clearly a grocery market.
+SPROUTS FARMERS MKT 203,64.19,2026-03-19,Groceries,false,Sprouts Farmers Market is clearly groceries.
+WEGMANS 087 BROOKLYN NY,113.52,2026-06-22,Groceries,false,Wegmans is clearly a supermarket.
+INSTACART FRESH MARKET,76.40,2026-02-25,Groceries,false,The descriptor identifies a grocery delivery order.
+FOOD BAZAAR SUPERMARKET,34.71,2026-05-03,Groceries,false,The merchant is explicitly a supermarket.
+LOCAL FARMERS MKT STALL 18,22.00,2026-04-04,Groceries,false,A farmers market purchase is clearly groceries.
+SQ JOES COFFEE 04/12,6.75,2026-04-12,Dining,false,A coffee shop purchase is clearly dining.
+CHIPOTLE 1834,14.28,2026-01-09,Dining,false,Chipotle is clearly a restaurant.
+DOORDASHTHAI VILLA,31.64,2026-05-16,Dining,false,The descriptor identifies restaurant delivery.
+STARBUCKS STORE 08731,5.92,2026-02-18,Dining,false,Starbucks is clearly a cafe.
+MCDONALD'S F1023,11.47,2026-06-11,Dining,false,McDonald's is clearly fast food.
+UBER EATS SWEETGREEN,24.86,2026-03-27,Dining,false,The descriptor identifies a prepared meal delivery.
+TST LITTLE LEMON NYC,67.20,2026-01-31,Dining,false,This is a restaurant point-of-sale charge.
+DUNKIN #349221 Q35,4.89,2026-05-08,Dining,false,Dunkin is clearly a coffee and food merchant.
+PANERA BREAD #601238,18.35,2026-04-26,Dining,false,Panera Bread is clearly a restaurant.
+GRUBHUBBURGER JOINT,27.13,2026-02-03,Dining,false,The descriptor identifies restaurant delivery.
+SHAKE SHACK MADISON SQ,19.76,2026-06-28,Dining,false,Shake Shack is clearly a restaurant.
+SQ *BOMBAY CANTEEN BK,43.50,2026-03-11,Dining,false,The merchant name indicates a restaurant.
+PAYPAL ETSY,48.90,2026-01-22,Shopping,false,Etsy is clearly an online retail marketplace.
+NIKE.COM 800-806-6453,129.99,2026-05-29,Shopping,false,Nike merchandise is clearly a shopping purchase.
+UNIQLO US 00015,74.60,2026-02-14,Shopping,false,Uniqlo is clearly an apparel retailer.
+BEST BUY 000478,899.99,2026-06-02,Shopping,false,Best Buy is clearly an electronics retailer.
+SEPHORA 0542,63.25,2026-03-07,Shopping,false,Sephora is clearly a beauty retailer.
+IKEA BROOKLYN 154,215.47,2026-04-20,Shopping,false,IKEA merchandise is clearly a shopping purchase.
+REI #142 SOHO,186.30,2026-01-18,Shopping,false,REI is clearly an outdoor retail store.
+MACYS EAST 071,142.08,2026-05-11,Shopping,false,Macy's is clearly a department store.
+APPLE.COM/US 800-MY-APPLE,1199.00,2026-02-27,Shopping,false,The Apple Store descriptor indicates a hardware purchase.
+BARNES & NOBLE #2107,32.48,2026-06-17,Shopping,false,Barnes & Noble is clearly a retail bookstore.
+MTANYCT PAYGO,2.90,2026-01-06,Transportation,false,The MTA fare is clearly public transportation.
+UBER TRIP HELP.UBER.COM,27.44,2026-04-09,Transportation,false,The descriptor identifies a rideshare trip.
+LYFT RIDE WED 8PM,18.72,2026-02-11,Transportation,false,The descriptor identifies a rideshare ride.
+SHELL OIL 57442188901,52.16,2026-05-24,Transportation,false,A fuel-station charge of this size is clearly gasoline.
+PARKMOBILE 678901,12.50,2026-03-14,Transportation,false,ParkMobile is clearly a parking charge.
+NJ TRANSIT MOBILE,16.25,2026-06-07,Transportation,false,NJ Transit is clearly public transportation.
+DELTA AIR 0062147789,386.40,2026-01-25,Transportation,false,The descriptor identifies an airline ticket.
+HERTZ RENT-A-CAR 01234,241.83,2026-04-29,Transportation,false,Hertz is clearly a car rental charge.
+CONEDISON WEB PMT,126.77,2026-02-01,Utilities,false,Con Edison is clearly an electric utility.
+VERIZON WIRELESS 800-922-0204,84.19,2026-05-05,Utilities,false,Verizon Wireless is clearly a phone bill.
+SPECTRUM CABLE 855-707-7328,79.99,2026-03-01,Utilities,false,Spectrum is clearly an internet or cable bill.
+NATIONAL GRID 00049281,68.42,2026-01-12,Utilities,false,National Grid is clearly a gas utility.
+NYC WATER BOARD AUTOPAY,54.63,2026-06-01,Utilities,false,The merchant is explicitly a water utility.
+T-MOBILE POSTPAID PCS,71.20,2026-04-03,Utilities,false,T-Mobile postpaid service is clearly a phone bill.
+NETFLIX.COM,22.99,2026-01-20,Entertainment,false,Netflix is clearly a streaming subscription.
+SPOTIFY USA,11.99,2026-02-20,Entertainment,false,Spotify is clearly a music subscription.
+AMC 25 TIMES SQUARE,36.50,2026-05-18,Entertainment,false,AMC is clearly a movie theater.
+STEAMGAMES.COM 4259522985,59.99,2026-03-23,Entertainment,false,Steam is clearly a video game platform.
+TICKETMASTERCONCERT 847,148.75,2026-06-13,Entertainment,false,Ticketmaster concert tickets are clearly entertainment.
+CITYMD URGENT CARE 114,75.00,2026-01-17,Healthcare,false,CityMD is clearly a healthcare provider.
+DR SMITH DENTAL ASSOC,210.00,2026-04-15,Healthcare,false,The descriptor identifies dental care.
+LABCORP 800-845-6167,42.18,2026-02-24,Healthcare,false,Labcorp is clearly a medical laboratory.
+CVS/PHARMACY RX 09214,18.67,2026-05-12,Healthcare,false,The RX marker clearly indicates a prescription.
+AVALON BAY RENT PMT,2450.00,2026-01-01,Housing,false,The descriptor explicitly identifies a rent payment.
+GREENPOINT PROPERTY MGMT,1850.00,2026-04-01,Housing,false,A property management charge of this size is clearly housing.
+CITY STORAGE UNIT 4421,189.00,2026-06-09,Housing,false,A storage unit payment is clearly a housing-related expense.
+AMAZON MKTPLACE PMTS AMZN.COM,96.34,2026-03-05,Shopping,true,"Amazon may represent Shopping, Groceries, or Entertainment, and the description gives no item detail."
+TARGET T-1849 NEW YORK NY,73.28,2026-05-19,Groceries,true,"Target may represent Groceries, Shopping, or Housing supplies, and the description gives no item detail."
+COSTCO WHSE #1205,164.77,2026-02-08,Groceries,true,"Costco may represent Groceries, Shopping, or Healthcare pharmacy purchases, and the description gives no item detail."
+WAL-MART #3795,58.42,2026-06-24,Shopping,true,"Walmart may represent Shopping, Groceries, or Housing supplies, and the description gives no item detail."
+VENMO PAYMENT,48.00,2026-01-29,Dining,true,"A context-free Venmo payment could be Dining, Shopping, Housing, or another category."
+ZELLE TO J MARTIN,850.00,2026-03-30,Housing,true,"A context-free Zelle payment could be Housing, Shopping, Dining, or another category."
+CASH APPPAYMENT,32.00,2026-04-11,Shopping,true,"A context-free Cash App payment could be Shopping, Dining, Entertainment, or another category."
+PAYPAL *PAYMENT,15.99,2026-05-27,Entertainment,true,"A generic PayPal charge could be Entertainment, Shopping, Dining, or another category."
+POS PURCHASE 439812,27.61,2026-02-06,Uncategorized,true,The generic POS descriptor provides no merchant or category information.
+MISC RETAIL 003829,44.70,2026-06-15,Shopping,true,The vague retail descriptor suggests Shopping but could also be Groceries or Housing supplies.
+CHECK #1047,600.00,2026-01-10,Uncategorized,true,A bare check number gives no payee or purpose information.
+ACH WEB PMT X7K92Q,132.45,2026-04-22,Uncategorized,true,The opaque ACH code gives no merchant or purpose information.
+AMEX EPAYMENT ACH PMT,500.00,2026-05-02,Uncategorized,true,This is a generic card payment descriptor with no underlying spending category.
+CVS STORE #10982,26.14,2026-03-17,Healthcare,true,CVS could be Healthcare or Groceries because the description does not indicate whether this was pharmacy or convenience merchandise.
+WALGREENS #07124,19.83,2026-06-04,Groceries,true,Walgreens could be Healthcare or Groceries because the description does not identify the purchased items.
+SHELL 0209341 QUICK MART,14.67,2026-01-24,Transportation,true,"A Shell quick-mart charge could be Transportation fuel or Groceries snacks, and the amount does not resolve it."
+7-ELEVEN 35742,21.36,2026-04-07,Groceries,true,7-Eleven could be Groceries or Transportation fuel depending on the location and items purchased.
+HOME DEPOT 1245,87.91,2026-02-16,Housing,true,"Home Depot could be Housing maintenance or general Shopping, and the description gives no item detail."
+APPLE.COM/BILL,12.99,2026-05-31,Entertainment,true,"Apple billing could be Entertainment digital media or Shopping for apps and services, and the description is not specific."
+SQ MARKETPLACE 5732,39.25,2026-03-26,Shopping,true,"The generic Square merchant name could represent Shopping, Dining, or Entertainment with no resolvable context."
+STOP & SHOP #0231,67.84,2026-07-02,Groceries,false,Stop & Shop is clearly a supermarket.
+GIANT FOOD STORES 4471,55.29,2026-06-19,Groceries,false,Giant Food Stores is clearly a grocery chain.
+FAIRWAY MARKET UWS,82.14,2026-01-08,Groceries,false,Fairway Market is clearly a grocery store.
+OLIVE GARDEN 01847,58.62,2026-03-15,Dining,false,Olive Garden is clearly a restaurant.
+FIVE GUYS 02931,22.47,2026-05-06,Dining,false,Five Guys is clearly a fast food restaurant.
+CAVA GRILL UNION SQ,16.89,2026-06-25,Dining,false,Cava is clearly a fast-casual restaurant.
+ZARA USA 4471,96.50,2026-02-12,Shopping,false,Zara is clearly a clothing retailer.
+HOMEGOODS #2210,47.36,2026-04-24,Shopping,false,HomeGoods is clearly a home retail store.
+GAMESTOP #3392,69.98,2026-01-30,Shopping,false,GameStop is clearly a video game retailer.
+CITI BIKE NYC,15.00,2026-03-08,Transportation,false,Citi Bike is clearly a bike-share transportation charge.
+JETBLUE AIRWAYS 2734190,312.60,2026-05-14,Transportation,false,The descriptor identifies an airline ticket.
+ENTERPRISE RENT-A-CAR 88213,198.45,2026-02-19,Transportation,false,Enterprise is clearly a car rental charge.
+PSEG LONG ISLAND,112.33,2026-06-08,Utilities,false,PSEG is clearly an electric utility.
+XFINITY INTERNET PMT,89.99,2026-04-01,Utilities,false,Xfinity is clearly an internet bill.
+NATIONAL FUEL GAS CO,63.71,2026-01-05,Utilities,false,National Fuel Gas is clearly a gas utility.
+AT&T WIRELESS BILL,78.40,2026-05-27,Utilities,false,AT&T Wireless is clearly a phone bill.
+EXTRA SPACE STORAGE 0091,165.00,2026-03-01,Housing,false,A storage unit payment is clearly a housing-related expense.
+PARK AVE APARTMENTS RENT,2650.00,2026-06-01,Housing,false,The descriptor explicitly identifies a rent payment.
+HOA FEE SUNSET RIDGE,310.00,2026-02-01,Housing,false,An HOA fee is clearly a housing-related expense.
+ABC HOME REPAIR SVC,425.00,2026-05-20,Housing,false,A home repair service charge is clearly housing-related.
+QUEST DIAGNOSTICS 04471,38.90,2026-01-16,Healthcare,false,Quest Diagnostics is clearly a medical laboratory.
+ONE MEDICAL MEMBERSHIP,199.00,2026-04-10,Healthcare,false,One Medical is clearly a healthcare provider.
+DR CHEN ORTHODONTICS,350.00,2026-06-14,Healthcare,false,The descriptor identifies orthodontic care.
+URGENT CARE NOW 2214,95.00,2026-03-22,Healthcare,false,Urgent Care Now is clearly a healthcare provider.
+HULU * YOUR SUBSCRIPTION,17.99,2026-02-05,Entertainment,false,Hulu is clearly a streaming subscription.
+REGAL CINEMAS 07734,24.50,2026-05-23,Entertainment,false,Regal Cinemas is clearly a movie theater.
+XBOX GAME PASS,14.99,2026-01-27,Entertainment,false,Xbox Game Pass is clearly a gaming subscription.
+LIVE NATION TICKETS,89.50,2026-06-30,Entertainment,false,Live Nation concert tickets are clearly entertainment.
+DOLLAR GENERAL #7734,24.63,2026-02-22,Shopping,true,"Dollar General may represent Shopping, Groceries, or Housing supplies, and the description gives no item detail."
+BJS WHOLESALE CLUB,143.29,2026-05-09,Groceries,true,"BJ's Wholesale Club may represent Groceries, Shopping, or Healthcare pharmacy purchases, and the description gives no item detail."
+SAMS CLUB #6209,178.44,2026-03-13,Groceries,true,"Sam's Club may represent Groceries, Shopping, or Housing supplies, and the description gives no item detail."
+RITE AID #04471,21.85,2026-06-17,Healthcare,true,Rite Aid could be Healthcare or Groceries because the description does not indicate whether this was pharmacy or convenience merchandise.
+WAYFAIR.COM,267.90,2026-01-19,Housing,true,"Wayfair may represent Housing furnishings or general Shopping, and the description gives no item detail."
+WIRE TRANSFER FEE,25.00,2026-04-06,Uncategorized,true,A bare wire transfer fee gives no merchant or purpose information.
+MISC DEBIT ADJ 88213,12.40,2026-02-28,Uncategorized,true,The generic debit adjustment descriptor provides no merchant or category information.
+SQ *CORNER DELI,18.75,2026-05-30,Dining,true,"A generic deli charge could be Dining or Groceries, and the description gives no item detail."
+SUNOCO 0459 GAS STATION,41.28,2026-03-26,Transportation,true,"A Sunoco charge could be Transportation fuel or Groceries snacks, and the amount does not resolve it."
+GOOGLE *PLAY SVCS,9.99,2026-06-21,Entertainment,true,"A Google Play charge could be Entertainment digital media or Shopping for apps, and the description is not specific."
+PAYPAL *ENERGYCO,145.60,2026-01-13,Utilities,true,"A PayPal-routed energy company payment could be Utilities or a misrouted Housing charge, and the description gives no clear merchant."
+FACEBK *MARKETPLACE,55.00,2026-04-18,Shopping,true,"A Facebook Marketplace charge could be Shopping, Housing, or Entertainment depending on the item purchased."
