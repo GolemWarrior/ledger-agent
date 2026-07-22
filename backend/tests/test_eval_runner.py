@@ -4,8 +4,8 @@ from unittest.mock import MagicMock, patch
 import pytest
 from langgraph.errors import GraphInterrupt
 
-from ledger_agent.eval.metrics import compute_accuracy, compute_escalation_precision, compute_escalation_recall
-from ledger_agent.eval.runner import DatasetRow, load_dataset, run_dataset
+from ledger_agent.eval.metrics import RowResult, compute_accuracy, compute_escalation_precision, compute_escalation_recall
+from ledger_agent.eval.runner import DatasetRow, get_previous_run, load_dataset, print_report, run_dataset
 
 VALID_CATEGORIES = {"Groceries", "Dining", "Transportation", "Utilities", "Housing",
                      "Healthcare", "Entertainment", "Shopping", "Transfer", "Uncategorized"}
@@ -108,3 +108,64 @@ def test_run_dataset_marks_graph_interrupt_rows_as_escalated():
 
     assert results[0].was_escalated is False
     assert results[1].was_escalated is True
+
+
+# --- get_previous_run ---
+
+def test_get_previous_run_returns_the_scalar_result():
+    fake_run = MagicMock(accuracy=0.91, escalation_precision=0.8, escalation_recall=0.7)
+    session = MagicMock()
+    session.scalar.return_value = fake_run
+
+    result = get_previous_run(session)
+
+    assert result is fake_run
+
+
+def test_get_previous_run_returns_none_when_no_prior_runs():
+    session = MagicMock()
+    session.scalar.return_value = None
+
+    result = get_previous_run(session)
+
+    assert result is None
+
+
+def test_get_previous_run_orders_by_run_at_descending():
+    session = MagicMock()
+    session.scalar.return_value = None
+
+    get_previous_run(session)
+
+    statement = session.scalar.call_args[0][0]
+    assert "ORDER BY eval_runs.run_at DESC" in str(statement)
+
+
+# --- print_report before/after comparison ---
+
+def _make_results():
+    return [
+        RowResult(predicted_category="Groceries", correct_category="Groceries",
+                  was_escalated=False, is_genuinely_ambiguous=False),
+        RowResult(predicted_category=None, correct_category="Dining",
+                  was_escalated=True, is_genuinely_ambiguous=True),
+    ]
+
+
+def test_print_report_shows_before_after_comparison_when_previous_run_exists(capsys):
+    previous_run = MagicMock(accuracy=0.91, escalation_precision=0.80, escalation_recall=0.70)
+
+    print_report(0.94, 0.85, 0.75, _make_results(), previous_run)
+
+    out = capsys.readouterr().out
+    assert "94.0%  (previous: 91.0%, +3.0)" in out
+    assert "85.0%  (previous: 80.0%, +5.0)" in out
+    assert "75.0%  (previous: 70.0%, +5.0)" in out
+
+
+def test_print_report_shows_first_run_messaging_when_no_previous_run(capsys):
+    print_report(0.94, 0.85, 0.75, _make_results(), None)
+
+    out = capsys.readouterr().out
+    assert out.count("(no previous run — this is the first recorded run)") == 3
+    assert "0.0%" not in out

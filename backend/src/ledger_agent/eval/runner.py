@@ -9,7 +9,7 @@ import inspect
 import logging
 from dataclasses import dataclass
 from datetime import date as date_cls
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
 from pathlib import Path
 
 from langgraph.checkpoint.memory import MemorySaver
@@ -82,23 +82,42 @@ def ensure_dummy_account(session: Session) -> Account:
     return account
 
 
+REQUIRED_CSV_COLUMNS = {"description", "amount", "date", "correct_category", "is_genuinely_ambiguous"}
+
+
 def load_dataset(csv_path: Path, valid_categories: set[str]) -> list[DatasetRow]:
+    if not csv_path.exists():
+        raise FileNotFoundError(f"eval dataset not found: {csv_path}")
+
     rows: list[DatasetRow] = []
     with csv_path.open(newline="", encoding="utf-8") as f:
         reader = csv.DictReader(f)
+        missing_columns = REQUIRED_CSV_COLUMNS - set(reader.fieldnames or [])
+        if missing_columns:
+            raise ValueError(f"eval_dataset.csv is missing required columns: {sorted(missing_columns)}")
+
         for line_num, row in enumerate(reader, start=2):
             correct_category = row["correct_category"]
             if correct_category not in valid_categories:
                 raise ValueError(
                     f"eval_dataset.csv row {line_num}: invalid correct_category {correct_category!r}"
                 )
+            try:
+                amount = Decimal(row["amount"])
+                date = date_cls.fromisoformat(row["date"])
+            except (InvalidOperation, ValueError) as exc:
+                raise ValueError(f"eval_dataset.csv row {line_num}: {exc}") from exc
             rows.append(DatasetRow(
                 description=row["description"],
-                amount=Decimal(row["amount"]),
-                date=date_cls.fromisoformat(row["date"]),
+                amount=amount,
+                date=date,
                 correct_category=correct_category,
                 is_genuinely_ambiguous=row["is_genuinely_ambiguous"].strip().lower() == "true",
             ))
+
+    if not rows:
+        raise ValueError(f"eval_dataset.csv has no data rows: {csv_path}")
+
     return rows
 
 
@@ -122,15 +141,21 @@ def run_dataset(session: Session, settings, rows: list[DatasetRow], account_id: 
         was_escalated = False
         thread_config = {"configurable": {"thread_id": f"eval-txn-{txn.id}"}}
         try:
-            compiled.invoke(_txn_to_state(txn), config=thread_config)
-        except GraphInterrupt:
-            was_escalated = True
+            try:
+                compiled.invoke(_txn_to_state(txn), config=thread_config)
+            except GraphInterrupt:
+                was_escalated = True
 
-        session.refresh(txn)
-        if txn.status == TransactionStatus.escalated:
-            was_escalated = True
+            session.refresh(txn)
+            if txn.status == TransactionStatus.escalated:
+                was_escalated = True
 
-        predicted_category = txn.category.name if txn.category_id else None
+            predicted_category = txn.category.name if txn.category_id else None
+        except Exception:
+            logger.exception("eval row %d (%s) failed, skipping", idx, row.description)
+            session.rollback()
+            continue
+
         results.append(RowResult(
             predicted_category=predicted_category,
             correct_category=row.correct_category,
@@ -141,11 +166,51 @@ def run_dataset(session: Session, settings, rows: list[DatasetRow], account_id: 
     return results
 
 
-def print_report(accuracy: float, precision: float, recall: float, row_count: int) -> None:
+def get_previous_run(session: Session) -> EvalRun | None:
+    return session.scalar(select(EvalRun).order_by(EvalRun.run_at.desc()).limit(1))
+
+
+def _format_comparison(label: str, current: float, previous_value: float | None) -> str:
+    if previous_value is None:
+        return f"  {label}{current * 100:.1f}%  (no previous run — this is the first recorded run)"
+    delta = (current - previous_value) * 100
+    return f"  {label}{current * 100:.1f}%  (previous: {previous_value * 100:.1f}%, {delta:+.1f})"
+
+
+def print_report(
+    accuracy: float,
+    precision: float,
+    recall: float,
+    results: list[RowResult],
+    previous_run: EvalRun | None = None,
+) -> None:
+    row_count = len(results)
+    auto_resolved_count = sum(1 for r in results if not r.was_escalated)
+    ambiguous_count = sum(1 for r in results if r.is_genuinely_ambiguous)
+    escalated_count = sum(1 for r in results if r.was_escalated)
+
     print(f"Eval run — {row_count} rows")
-    print(f"  Accuracy:              {accuracy * 100:.1f}%")
-    print(f"  Escalation precision:  {precision * 100:.1f}%")
-    print(f"  Escalation recall:     {recall * 100:.1f}%")
+    if auto_resolved_count == 0:
+        print("  Accuracy:              undefined (all rows escalated) — reporting 0.0%")
+    else:
+        print(_format_comparison(
+            "Accuracy:              ", accuracy,
+            previous_run.accuracy if previous_run else None,
+        ))
+    if escalated_count == 0:
+        print("  Escalation precision:  undefined (no rows escalated) — reporting 0.0%")
+    else:
+        print(_format_comparison(
+            "Escalation precision:  ", precision,
+            previous_run.escalation_precision if previous_run else None,
+        ))
+    if ambiguous_count == 0:
+        print("  Escalation recall:     undefined (no genuinely-ambiguous rows) — reporting 0.0%")
+    else:
+        print(_format_comparison(
+            "Escalation recall:     ", recall,
+            previous_run.escalation_recall if previous_run else None,
+        ))
 
 
 def main() -> None:
@@ -161,13 +226,14 @@ def main() -> None:
         account = ensure_dummy_account(session)
 
         rows = load_dataset(EVAL_DATASET_PATH, set(DEFAULT_CATEGORIES))
+        previous_run = get_previous_run(session)
         results = run_dataset(session, settings, rows, account.id)
 
         accuracy = compute_accuracy(results)
         precision = compute_escalation_precision(results)
         recall = compute_escalation_recall(results)
 
-        print_report(accuracy, precision, recall, len(results))
+        print_report(accuracy, precision, recall, results, previous_run)
 
         prompt_hash = hashlib.sha256(
             inspect.getsource(build_classification_prompt).encode()
