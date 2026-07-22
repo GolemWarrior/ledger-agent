@@ -44,9 +44,9 @@ def test_accuracy_excludes_escalated_rows():
     assert compute_accuracy(results) == 1.0
 
 
-def test_accuracy_all_escalated_returns_zero():
+def test_accuracy_all_escalated_returns_none():
     results = [_row(predicted=None, escalated=True), _row(predicted=None, escalated=True)]
-    assert compute_accuracy(results) == 0.0
+    assert compute_accuracy(results) is None
 
 
 # --- compute_escalation_recall ---
@@ -61,9 +61,9 @@ def test_escalation_recall_none_escalated():
     assert compute_escalation_recall(results) == 0.0
 
 
-def test_escalation_recall_zero_ambiguous_rows_returns_zero():
+def test_escalation_recall_zero_ambiguous_rows_returns_none():
     results = [_row(ambiguous=False, escalated=False), _row(ambiguous=False, escalated=True)]
-    assert compute_escalation_recall(results) == 0.0
+    assert compute_escalation_recall(results) is None
 
 
 def test_escalation_recall_mixed():
@@ -81,9 +81,9 @@ def test_escalation_precision_all_escalated_ambiguous():
     assert compute_escalation_precision(results) == 1.0
 
 
-def test_escalation_precision_none_escalated_returns_zero():
+def test_escalation_precision_none_escalated_returns_none():
     results = [_row(ambiguous=True, escalated=False), _row(ambiguous=False, escalated=False)]
-    assert compute_escalation_precision(results) == 0.0
+    assert compute_escalation_precision(results) is None
 
 
 def test_escalation_precision_mixed():

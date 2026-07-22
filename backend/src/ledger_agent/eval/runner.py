@@ -105,14 +105,15 @@ def load_dataset(csv_path: Path, valid_categories: set[str]) -> list[DatasetRow]
             try:
                 amount = Decimal(row["amount"])
                 date = date_cls.fromisoformat(row["date"])
-            except (InvalidOperation, ValueError) as exc:
+                is_genuinely_ambiguous = row["is_genuinely_ambiguous"].strip().lower() == "true"
+            except (InvalidOperation, ValueError, AttributeError, TypeError) as exc:
                 raise ValueError(f"eval_dataset.csv row {line_num}: {exc}") from exc
             rows.append(DatasetRow(
                 description=row["description"],
                 amount=amount,
                 date=date,
                 correct_category=correct_category,
-                is_genuinely_ambiguous=row["is_genuinely_ambiguous"].strip().lower() == "true",
+                is_genuinely_ambiguous=is_genuinely_ambiguous,
             ))
 
     if not rows:
@@ -125,22 +126,23 @@ def run_dataset(session: Session, settings, rows: list[DatasetRow], account_id: 
     compiled = build_graph(session, settings).compile(checkpointer=MemorySaver())
 
     results: list[RowResult] = []
+    skipped_count = 0
     for idx, row in enumerate(rows):
-        txn = Transaction(
-            plaid_transaction_id=f"eval-{idx}",
-            account_id=account_id,
-            description=row.description,
-            amount=row.amount,
-            date=row.date,
-            status=TransactionStatus.pending,
-        )
-        session.add(txn)
-        session.commit()
-        session.refresh(txn)
-
         was_escalated = False
-        thread_config = {"configurable": {"thread_id": f"eval-txn-{txn.id}"}}
         try:
+            txn = Transaction(
+                plaid_transaction_id=f"eval-{idx}",
+                account_id=account_id,
+                description=row.description,
+                amount=row.amount,
+                date=row.date,
+                status=TransactionStatus.pending,
+            )
+            session.add(txn)
+            session.commit()
+            session.refresh(txn)
+
+            thread_config = {"configurable": {"thread_id": f"eval-txn-{txn.id}"}}
             try:
                 compiled.invoke(_txn_to_state(txn), config=thread_config)
             except GraphInterrupt:
@@ -154,6 +156,7 @@ def run_dataset(session: Session, settings, rows: list[DatasetRow], account_id: 
         except Exception:
             logger.exception("eval row %d (%s) failed, skipping", idx, row.description)
             session.rollback()
+            skipped_count += 1
             continue
 
         results.append(RowResult(
@@ -162,6 +165,9 @@ def run_dataset(session: Session, settings, rows: list[DatasetRow], account_id: 
             was_escalated=was_escalated,
             is_genuinely_ambiguous=row.is_genuinely_ambiguous,
         ))
+
+    if skipped_count:
+        logger.warning("eval run: %d/%d rows skipped due to errors", skipped_count, len(rows))
 
     return results
 
@@ -178,34 +184,35 @@ def _format_comparison(label: str, current: float, previous_value: float | None)
 
 
 def print_report(
-    accuracy: float,
-    precision: float,
-    recall: float,
+    accuracy: float | None,
+    precision: float | None,
+    recall: float | None,
     results: list[RowResult],
     previous_run: EvalRun | None = None,
+    skipped_count: int = 0,
 ) -> None:
     row_count = len(results)
     auto_resolved_count = sum(1 for r in results if not r.was_escalated)
     ambiguous_count = sum(1 for r in results if r.is_genuinely_ambiguous)
     escalated_count = sum(1 for r in results if r.was_escalated)
 
-    print(f"Eval run — {row_count} rows")
+    print(f"Eval run — {row_count} rows" + (f" ({skipped_count} skipped due to errors)" if skipped_count else ""))
     if auto_resolved_count == 0:
-        print("  Accuracy:              undefined (all rows escalated) — reporting 0.0%")
+        print("  Accuracy:              undefined (all rows escalated)")
     else:
         print(_format_comparison(
             "Accuracy:              ", accuracy,
             previous_run.accuracy if previous_run else None,
         ))
     if escalated_count == 0:
-        print("  Escalation precision:  undefined (no rows escalated) — reporting 0.0%")
+        print("  Escalation precision:  undefined (no rows escalated)")
     else:
         print(_format_comparison(
             "Escalation precision:  ", precision,
             previous_run.escalation_precision if previous_run else None,
         ))
     if ambiguous_count == 0:
-        print("  Escalation recall:     undefined (no genuinely-ambiguous rows) — reporting 0.0%")
+        print("  Escalation recall:     undefined (no genuinely-ambiguous rows)")
     else:
         print(_format_comparison(
             "Escalation recall:     ", recall,
@@ -233,7 +240,7 @@ def main() -> None:
         precision = compute_escalation_precision(results)
         recall = compute_escalation_recall(results)
 
-        print_report(accuracy, precision, recall, results, previous_run)
+        print_report(accuracy, precision, recall, results, previous_run, skipped_count=len(rows) - len(results))
 
         prompt_hash = hashlib.sha256(
             inspect.getsource(build_classification_prompt).encode()

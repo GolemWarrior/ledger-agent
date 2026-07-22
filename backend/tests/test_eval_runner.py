@@ -42,6 +42,15 @@ def test_load_dataset_coerces_is_genuinely_ambiguous_to_bool(tmp_path):
     assert isinstance(rows[0].is_genuinely_ambiguous, bool)
 
 
+def test_load_dataset_raises_value_error_on_missing_trailing_field(tmp_path):
+    # Row is short one field (no trailing comma for is_genuinely_ambiguous) — DictReader
+    # fills the missing key with None; loading must raise a clean ValueError, not crash.
+    csv_path = _write_csv(tmp_path, "Whole Foods,42.00,2026-01-14,Groceries\n")
+
+    with pytest.raises(ValueError, match="row 2"):
+        load_dataset(csv_path, VALID_CATEGORIES)
+
+
 def test_load_dataset_parses_valid_rows(tmp_path):
     csv_path = _write_csv(tmp_path, "Whole Foods,42.00,2026-01-14,Groceries,false,\n")
 
@@ -110,6 +119,27 @@ def test_run_dataset_marks_graph_interrupt_rows_as_escalated():
     assert results[1].was_escalated is True
 
 
+def test_run_dataset_skips_row_that_raises_and_rolls_back():
+    fake_account = MagicMock(name="Eval")
+
+    def fake_add(obj):
+        obj.account = fake_account
+
+    session = MagicMock()
+    session.add.side_effect = fake_add
+    settings = MagicMock()
+    mock_compiled = MagicMock()
+    mock_compiled.invoke.side_effect = [None, RuntimeError("boom")]
+
+    with patch("ledger_agent.eval.runner.build_graph") as mock_build:
+        mock_build.return_value.compile.return_value = mock_compiled
+        results = run_dataset(session, settings, _make_rows(), account_id=1)
+
+    assert len(results) == 1
+    assert results[0].was_escalated is False
+    assert session.rollback.called
+
+
 # --- get_previous_run ---
 
 def test_get_previous_run_returns_the_scalar_result():
@@ -169,3 +199,17 @@ def test_print_report_shows_first_run_messaging_when_no_previous_run(capsys):
     out = capsys.readouterr().out
     assert out.count("(no previous run — this is the first recorded run)") == 3
     assert "0.0%" not in out
+
+
+def test_print_report_shows_skipped_row_count(capsys):
+    print_report(0.94, 0.85, 0.75, _make_results(), None, skipped_count=3)
+
+    out = capsys.readouterr().out
+    assert "(3 skipped due to errors)" in out
+
+
+def test_print_report_omits_skipped_note_when_zero(capsys):
+    print_report(0.94, 0.85, 0.75, _make_results(), None, skipped_count=0)
+
+    out = capsys.readouterr().out
+    assert "skipped" not in out
