@@ -1,8 +1,8 @@
 # Ledger Agent
 
-A local-first personal finance tool that pulls transactions from every linked bank account via Plaid, auto-categorizes them with an LLM-based agent, and escalates anything it isn't confident about to a human — instead of paying for Rocket Money, Monarch, or Copilot to do it in a black box.
+A local-first personal finance tool that pulls transactions from every linked bank account via Plaid, auto-categorizes them with an LLM-based agent, and escalates anything it isn't confident about to a human — without relying on a third-party budgeting subscription.
 
-Built as a project to go deep on two things: **agentic workflow design** (LangGraph, human-in-the-loop interrupts, persistent memory) and **evaluating LLM systems properly** (a static labeled benchmark, isolated eval schema, precision/recall on escalation — not just vibes).
+Built as a project to go deep on two things: **agentic workflow design** (LangGraph, human-in-the-loop interrupts, persistent memory) and **evaluating LLM systems properly** (a static labeled benchmark, isolated eval schema, precision/recall on escalation).
 
 > **Status:** personal project / working prototype, not a production financial product. It runs entirely on my own machine against my own accounts. See [Known Limitations](#known-limitations--what-id-fix-next) — I'm listing them on purpose.
 
@@ -81,7 +81,7 @@ I'd call this a **constrained human-in-the-loop classification workflow**, not a
 
 ## Evaluation
 
-Most "I built an AI agent" projects stop at a demo. This one has a real harness for the eval a Ramp-style Applied AI role actually cares about, in [`eval/runner.py`](backend/src/ledger_agent/eval/runner.py):
+The eval harness, in [`eval/runner.py`](backend/src/ledger_agent/eval/runner.py), covers:
 
 - **Static, hand-labeled benchmark** — [`eval_dataset.csv`](eval_dataset.csv), 120 rows across the 10 default categories, each labeled `is_genuinely_ambiguous` by hand ([labeling guide](eval_dataset_README.md)). Ambiguous means "two reasonable people would disagree given only this description and amount" — e.g. a `Costco` charge could be Groceries or Shopping, but `Netflix` is unambiguously Entertainment.
 - **Isolated `eval` Postgres schema**, wiped and reseeded before every run, so eval traffic never touches real transaction data and every run starts from the same clean state.
