@@ -84,6 +84,12 @@ def run_classification_agent(session_factory: sessionmaker, sync_run_id: int | N
 
             logger.info("Classifying %d pending transaction(s)", len(pending_txns))
 
+            # End the read-only transaction opened by the query above. Leaving it open
+            # deadlocks checkpointer.setup() below: on a fresh DB it runs CREATE INDEX
+            # CONCURRENTLY, which blocks until every other open transaction finishes —
+            # including this session's own, which can't finish until setup() returns.
+            session.rollback()
+
             conn_string = _get_psycopg_conn_string(settings.database_url_sync)
 
             from langgraph.checkpoint.postgres import PostgresSaver
