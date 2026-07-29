@@ -6,6 +6,8 @@ Built as a project to go deep on two things: **agentic workflow design** (LangGr
 
 > **Status:** personal project / working prototype, not a production financial product. It runs entirely on my own machine against my own accounts. See [Known Limitations](#known-limitations--what-id-fix-next) — I'm listing them on purpose.
 
+**Highlights:** human-in-the-loop LangGraph workflow · durable Postgres checkpointing · 120-case labeled evaluation benchmark · 133 automated tests · Plaid, FastAPI, PostgreSQL, React, and Docker
+
 ## Table of Contents
 
 - [What it does](#what-it-does)
@@ -107,10 +109,8 @@ I'm intentionally not printing a results table with made-up numbers here — run
 - **Frontend:** React 19 + Vite + TanStack Query + React Router + Tailwind CSS
 - **Database:** PostgreSQL — `public` schema for live data, a fully isolated `eval` schema for benchmark runs
 - **Agent runtime:** LangGraph graph compiled with a Postgres checkpointer, so classification/escalation state survives process restarts
-- **Ingestion:** Plaid `/transactions/sync` via a background thread per sync job, with transfer-pair detection so an internal transfer between two of your own linked accounts doesn't get double-counted as spend
+- **Ingestion:** Plaid `/transactions/get` via a background thread per sync job, with transfer-pair detection so transfers between linked accounts are not double-counted as spending.
 - **Testing:** 133 tests across agent nodes (confidence boundaries, JSON parsing, vendor memory, escalation/resume, fallback categories), graph execution, all API routes, Plaid sync, and the eval harness itself
-
-Full design decisions and trade-offs: [`_bmad-output/planning-artifacts/architecture.md`](../_bmad-output/planning-artifacts/architecture.md)
 
 ## Quick Start
 
